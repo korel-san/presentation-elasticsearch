@@ -12,8 +12,6 @@ class: center, middle, inverse
 - Эластик серч это поисковый движок основанный на Апач Люцен
 - The Apache Lucene — это свободная библиотека для высокоскоростного полнотекстового поиска, написанная на Java.
 - Apache Lucene - Может быть использована для поиска в интернете и при решении различных задач вычислительной лингвистики.
-- Например, Lucene используется как компонент в децентрализованной поисковой системе YaCy [Ya see] (свободное ПО).
-- YaCy (от англ. Yet another Cyberspace, Ещё одно Киберпространство; созвучно с англ. Ya see) — свободно распространяемая децентрализованная поисковая система, построенная по принципу одноранговых сетей (P2P)
 Исходя из собственного опыта, этот движок написан не для простых смертных людей.. (следующий слайд)
 
 ---
@@ -31,7 +29,7 @@ class: center, middle, inverse
 #*18+*
 
 ???
-Да, заранее предупрежу, доклад может содержать нецензурные картинки
+Да, заранее предупрежу, доклад может содержать не очень цензурные картинки
 
 ---
 
@@ -126,7 +124,7 @@ class: center, middle, inverse
 Высокий порог вхождения
 
 Простые запросы вы конечно научитесь писать довольно быстро. Но я не видела еще проекта, где задачи для движка
-полнотекстового поиска соответствовали простым запросам. Чаще всего нужны какие-то подвыподверты.
+полнотекстового поиска соответствовали бы простым запросам. Чаще всего нужны какие-то подвыподверты.
 
 ---
 
@@ -145,7 +143,7 @@ class: center, middle, inverse
 layout: false
 .left-column[
 # Curl in console
-### Initializing mapping and settings (for some collection)
+### Initializing mapping and settings (for products index)
 ]
 .right-column[
 ```
@@ -188,15 +186,13 @@ curl -X PUT "http://localhost:9200/products" -d '{
 
 Чем консоль плоха?
 
-Нет возможности нормально поправить один символ,
+Нет возможности отменить изменения какого-то символа,
 
-поправить отступы
-
-и
+поправить отступы,
 
 сделать замену по тексту,
 
-геморно переключаться между запросами
+сложно переключаться между запросами
 
 ---
 class: center, middle, inverse
@@ -206,7 +202,9 @@ class: center, middle, inverse
 
 ???
 Это не наш метод!
+
 В общем не буду тянуть, мой выбор пал на официальный пакет от той же конторы
+
 ---
 template: inverse
 
@@ -215,29 +213,26 @@ template: inverse
 ### http://localhost:9200/_plugin/marvel/sense/index.html
 
 ???
-Устанавливается очень просто:
+Устанавливается очень просто.
 
 http://www.elastic.co/guide/en/elasticsearch/guide/current/sense_widget.html?snippets/070_Index_Mgmt/40_Custom_dynamic_mapping.json
 
-Необходимо будет пройти по инструкциям и установить все необходимые пакеты
+* Необходимо будет пройти по инструкциям и установить все необходимые пакеты
 
 После установки можно открыть браузер на странице
 
 http://localhost:9200/
 
 ---
-class: middle
+class: center, middle
 
 .center[![marvel](images/marvel_.png)]
 
-##### http://localhost:9200/_search - Search across all indexes and all types.
-##### http://localhost:9200/movies/_search - Search across all types in the movies index.
-##### http://localhost:9200/movies/movie/_search - Search explicitly for documents of type movie within the movies index.
-
 ???
 Если все установится нормально, то при повторном обновлении окошка увидите что-то вроде этого:
-https://screencloud.net/v/kTmO
+
 Чрезвычайно удобный отладчик запросов.
+
 Запускать можно только те запросы, которые нужны в данный момент (для каждого из них справа кнопка запуска)
 
 И в том порядке в каком удобно.
@@ -246,9 +241,10 @@ https://screencloud.net/v/kTmO
 
 Совершенно понятный язык в который можно ставлять обычный JSON (даже не форматированный)
 
-Проверить версию эластиксерча в браузере localhost:9200/_nodes/_all/process?pretty
+** Проверить версию эластиксерча в браузере localhost:9200/_nodes/_all/process?pretty
 
 Если марвелом не пользоваться, можно писать запросы в браузере, но их отладка, особенно когда количество символов переваливает за 200 - нереальная задача:
+
 http://localhost:9200/_all/_settings
 http://localhost:9200/_all/_mapping
 
@@ -266,6 +262,52 @@ template: inverse
 но все они ущербны, по сравнению с марвелом
 
 ---
+class: middle, inverse
+
+## Basic Concepts
+####Near Realtime (NRT)edit
+######Elasticsearch is a near real time search platform. What this means is there is a slight latency (normally one second) from the time you index a document until the time it becomes searchable.
+####Cluster
+######A cluster is a collection of one or more nodes (servers) that together holds your entire data and provides federated indexing and search capabilities across all nodes
+####Node
+######A node is a single server that is part of your cluster, stores your data, and participates in the cluster’s indexing and search capabilities.
+####Index
+######An index is a collection of documents that have somewhat similar characteristics.
+####Type
+######Within an index, you can define one or more types. A type is a logical category/partition of your index whose semantics is completely up to you.
+####Document
+######A document is a basic unit of information that can be indexed. A document is a JSON document which is stored in elasticsearch.
+####Shards & Replicas
+######Horizontally split/scale out your search volume, distribute and parallelize operations across shards, high availability in case a shard/node fails
+
+???
+index - database
+type - collection
+
+---
+class: middle, inverse
+
+## Glossary of terms
+####mapping
+######A mapping is like a schema definition in a relational database.
+####source field
+######By default, the JSON document that you index will be stored in the _source field and will be returned by all get and search requests.
+####term
+######A term is an exact value that is indexed in elasticsearch.
+####text
+######Text (or full text) is ordinary unstructured text, such as this paragraph. By default, text will be analyzed into terms, which is what is actually stored in the index.
+####analysis
+######Analysis is the process of converting full text to terms.
+
+---
+class: middle, inverse
+
+##Request examples
+##### http://localhost:9200/_search - Search across all indexes and all types.
+##### http://localhost:9200/movies/_search - Search across all types in the movies index.
+##### http://localhost:9200/movies/movie/_search - Search explicitly for documents of type movie within the movies index.
+
+---
 template: inverse
 
 #ElasticSearch in use
@@ -273,16 +315,11 @@ template: inverse
 ---
 class:middle
 
-### Formatted output
+### Simple search with formatted output
 ```
 curl -XGET http://localhost:9200/products/_search?pretty=true -d'{
-  "sort" : [
-    "_score"
-  ],
   "query": {
-    "query_string":{
-      "query": "Card"
-    }
+    "match_all": {}
   }
 }'
 ```
@@ -290,55 +327,257 @@ curl -XGET http://localhost:9200/products/_search?pretty=true -d'{
 ```
 GET http://localhost:9200/products/_search?pretty=true&text=
 {
-  "sort": [
-    "_score"
-  ],
   "query": {
-    "query_string": {
-      "query": "Card"
-    }
+    "match_all": {}
   }
 }
 ```
+#### is equal to url
+http://localhost:9200/products/_search?source={"query":{"match_all":{}}}
 
 ---
-template:inverse
+template: inverse
 
-## Types of queries:
-### - query
-### - text
-### - filter
-### - match (multi_match, match_phrase, match_phrase_prefix, match_all)
-### - query_string
+##Modifying Your Data (CRUD)
+###Indexing/Replacing Documents
+###Updating Documents
+###Deleting Documents
+###Batch Processing
 
 ---
 class:middle
 
-### Simple search
+###Indexing/Replacing Documents
+```
+curl -XPUT 'localhost:9200/customer/external/1?pretty' -d '
+{
+  "name": "John Doe"
+}'
+```
+```
+curl -XPUT 'localhost:9200/customer/external/1?pretty' -d '
+{
+  "name": "Jane Doe"
+}'
+```
+```
+curl -XPUT 'localhost:9200/customer/external/2?pretty' -d '
+{
+  "name": "Jane Doe"
+}'
+```
+```
+curl -XPOST 'localhost:9200/customer/external?pretty' -d '
+{
+  "name": "Jane Doe"
+}'
+```
+
+---
+class:middle
+
+###Updating Documents
+```
+curl -XPOST 'localhost:9200/customer/external/1/_update?pretty' -d '
+{
+  "doc": { "name": "Jane Doe" }
+}'
+```
+```
+curl -XPOST 'localhost:9200/customer/external/1/_update?pretty' -d '
+{
+  "doc": { "name": "Jane Doe", "age": 20 }
+}'
+```
+```
+curl -XPOST 'localhost:9200/customer/external/1/_update?pretty' -d '
+{
+  "script" : "ctx._source.age += 5"
+}'
+```
+
+---
+class:middle
+
+###Deleting Documents
+```
+curl -XDELETE 'localhost:9200/customer/external/2?pretty'
+```
+```
+curl -XDELETE 'localhost:9200/customer/external/_query?pretty' -d '
+{
+  "query": { "match": { "name": "John" } }
+}'
+```
+
+---
+class:middle
+
+###Batch Processing
+```
+curl -XPOST 'localhost:9200/customer/external/_bulk?pretty' -d '
+  { "index": { "_id": "1" } }
+  { "name": "John Doe" }
+  { "index": { "_id": "2"} }
+  { "name": "Jane Doe" }
+'
+```
+```
+curl -XPOST 'localhost:9200/customer/external/_bulk?pretty' -d '
+  { "update": { "_id": "1" } }
+  { "doc": { "name": "John Doe becomes Jane Doe" } }
+  { "delete": { "_id": "2" } }
+'
+```
+
+---
+template: inverse
+
+##Query Language
+
+---
+class: middle
+###Queries are JSON objects with the following structure (each of the main sections has more detail below):
+```
+{
+    size: # number of results to return (defaults to 10)
+    from: # offset into results (defaults to 0)
+    fields: # list of document fields that should be returned .red.bold[1*]
+    sort: # define sort order .red.bold[2*]
+    query: {
+        # "query" object following the Query DSL .red.bold[3*]
+        # details below
+    },
+    facets: {
+        # facets specifications
+        # Facets provide summary information about a particular field
+        # or fields in the data
+    }
+    # special case for situations where you want to apply filter/query
+    # to results but *not* to facets
+    filter: {
+        # filter objects
+        # a filter is a simple "filter" (query) on a specific field.
+        # Simple means e.g. checking against a specific value or range of values
+    }
+}
+```
+- [1*] http://elasticsearch.org/guide/reference/api/search/fields.html
+- [2*] http://elasticsearch.org/guide/reference/api/search/sort.html
+- [3*] http://elasticsearch.org/guide/reference/query-dsl/
+
+---
+template: inverse
+
+##Search result
+
+---
+template: inverse
+![marvel](images/search_result.png)
+
+---
+class: middle
+
+###Query results look like
+```
+{
+    # some info about the query (which shards it used, how long it took etc)
+    ...
+    # the results
+    hits: {
+        total: # total number of matching documents
+        hits: [
+            # list of "hits" returned
+            {
+                _id: # id of document
+                score: # the search index score
+                _source: {
+                    # document 'source'
+                    # (i.e. the original JSON document you sent to the index)
+                }
+            }
+        ]
+    }
+    # facets if these were requested
+    facets: {
+        ...
+    }
+}
+```
+
+---
+template: inverse
+
+## Types of queries
+
+---
+class: middle, inverse
+####match_all
+######Return all documents from endpoint (index and type)
+####terms (exact values)
+######Works only for not_analyzed or terms strings. It refers with the result of analyzer work
+####match (multi_match, match_phrase, match_phrase_prefix)
+######Complex query could consist of terms and query_string. It has couple types of result sorting
+####query_string
+######Simple queries as regexp
+####query
+######As a general rule, queries should be used instead of filters: for full text search, where the result depends on a relevance score
+####filter
+######As a general rule, filters should be used instead of queries: for binary yes/no searches, for queries on exact values
+
+???
+Когда я первый раз выписала список всех типов запросов, у меня была такая реакция (следующий слайд)
+
+---
+template: inverse
+
+![yyyyyy](images/yyyyyy.jpg)
+
+---
+template: inverse
+
+##Couple simple examples time!
+
+---
+class:middle
+
+### Classic Search-Box Style Full-Text Query
 ```
 curl -XGET http://localhost:9200/products/_search -d'{
   "query": {
-    "text": {"_all": "Dubai"},
-    "type": "phrase_prefix"
+    "query_string": {
+       "query": "Dubai"
+    }
   },
   "sort": [{"_score": "desc"}]
 }'
 ```
+
+### Search with specified query string
+```
+curl -XGET http://localhost:9200/products/_search -d'{
+  "query": {
+    "query_string": {
+       "query": "Dubai AND 195?"
+    }
+  }
+}'
+```
+
+---
+class:middle
 
 ### Search with all nested value
 ```
 curl -XGET http://localhost:9200/products/_search -d'{
   "query": {
     "query_string": {
-      "fields": ["descriptions.*"],
-      "query": "Dubai"
+       "fields": ["descriptions.*"],
+       "query": "Dubai"
     }
   }
 }'
 ```
-
----
-class:middle
 
 ### Search with specified nested value
 ```
@@ -354,6 +593,9 @@ curl -XGET http://localhost:9200/products/_search -d'{
 }'
 ```
 
+---
+class:middle
+
 ### Search with specified query string
 ```
 curl -XGET http://localhost:9200/products/_search -d'{
@@ -365,6 +607,103 @@ curl -XGET http://localhost:9200/products/_search -d'{
 }'
 ```
 
+### Full-Text Query plus Filter on a Field
+```
+curl -XGET http://localhost:9200/products/_search -d'{
+   "query": {
+       "query_string": {
+           "query": {query string}
+       },
+       "term": {
+           {field}: {value}
+       }
+   }
+}'
+```
+
+---
+class:middle
+
+### Filter on two fields
+```
+curl -XGET http://localhost:9200/products/_search -d'{
+   "query": {
+       "filtered": {
+           "query": { "match_all": {} },
+           "filter": {
+               "and": [{
+                   "ids": { "values": ["1","2","3","4","5","6","7","8","9"] }
+               }, {
+                   "range" : {
+                       "b" : {
+                           "from" : 4,
+                           "to" : "8"
+                       }
+                   },
+               }, { "term": { "a": "john" } }]
+           }
+       }
+   }
+}'
+```
+
+---
+class: middle
+
+###Highlighting
+```
+GET http://localhost:9200/products/_search?pretty=true&text=
+{
+  "query": {
+    "multi_match": {
+      "query": "Dubai",
+      "fields": ["descriptions.*"]
+    }
+  },
+  "highlight": {
+    "number_of_fragments": 3,
+    "fragment_size": 150,
+    "tag_schema": "styled",
+    "fields": {
+      "_all": {
+        "pre_tags": [ "<em>" ],
+        "post_tags": [ "</em>" ]
+      },
+      "descriptions.en.name": { "number_of_fragments": 0 },
+      "descriptions.en.metaDescription": { "number_of_fragments": 0 },
+      "descriptions.en.benefits": { "number_of_fragments": 5, "order": "score" }
+    }
+  }
+}
+```
+
+---
+class: middle
+
+###Highlighting result
+```
+{
+  [...]
+  "highlight": {
+     "descriptions.en.metaDescription": [
+        "<em>Dubai</em> First offers the <em>Dubai</em>
+        Moments Titanium Card by MasterCard at a rate of 3.90% on Souqalmal.com"
+     ],
+     "descriptions.en.name": [
+        "<em>Dubai</em> Moments Titanium Card"
+     ],
+     "descriptions.en.benefits": [
+        " benefits with partners which encompass lifestyle, entertainment,
+        shopping, dining, jewellery, wellness; Earn <em>Dubai</em>
+        Dinar rewards and redeem against gift",
+        " vouchers from brands, shopping malls, utilities and online transactions;
+        Priceless Arabia benefits; 24-Hour Roadside Assistance;
+        Use <em>Dubai</em> Moments card"
+     ]
+  }
+}
+```
+
 ---
 class:middle
 
@@ -372,13 +711,38 @@ class:middle
 ```
 curl -XGET http://localhost:9200/products/_analyze -d 'Dubai'
 ```
-#### is equal to (in Marvel)
+####is equal to (in Marvel)
 ```
 GET http://localhost:9200/products/_analyze?text='Dubai'
 ```
 
+---
+class: middle
+
+###Geospatial Query to find results near a given point
+```
+curl -XGET http://localhost:9200/products/_search -d'{
+   "query": {
+       "filtered" : {
+           "query" : {
+               "match_all" : {}
+           },
+           "filter" : {
+               "geo_distance" : {
+                   "distance" : "20km",
+                   "Location" : {
+                       "lat" : 37.776,
+                       "lon" : -122.41
+                   }
+               }
+           }
+       }
+   }
+}'
+```
+
 ???
-А теперь приведу пару интересных примеров
+А теперь более сложные примеры
 
 ---
 class:middle
