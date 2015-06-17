@@ -92,10 +92,6 @@ class: center, middle, inverse
 
 ---
 
-#Yes, but NO
-
----
-
 ## 6) is released as open source under the terms of the Apache License
 ## 7) is the second most popular enterprise search engine (Solr is the first one)
 
@@ -596,17 +592,6 @@ curl -XGET http://localhost:9200/products/_search -d'{
 ---
 class:middle
 
-### Search with specified query string
-```
-curl -XGET http://localhost:9200/products/_search -d'{
-  "query": {
-    "query_string": {
-      "query": "Dubai AND 195?"
-    }
-  }
-}'
-```
-
 ### Full-Text Query plus Filter on a Field
 ```
 curl -XGET http://localhost:9200/products/_search -d'{
@@ -619,6 +604,15 @@ curl -XGET http://localhost:9200/products/_search -d'{
        }
    }
 }'
+```
+
+### Analyze word
+```
+curl -XGET http://localhost:9200/products/_analyze -d 'Dubai'
+```
+####is equal to (in Marvel)
+```
+GET http://localhost:9200/products/_analyze?text='Dubai'
 ```
 
 ---
@@ -705,18 +699,6 @@ class: middle
 ```
 
 ---
-class:middle
-
-### Analyze word
-```
-curl -XGET http://localhost:9200/products/_analyze -d 'Dubai'
-```
-####is equal to (in Marvel)
-```
-GET http://localhost:9200/products/_analyze?text='Dubai'
-```
-
----
 class: middle
 
 ###Geospatial Query to find results near a given point
@@ -741,13 +723,228 @@ curl -XGET http://localhost:9200/products/_search -d'{
 }'
 ```
 
+---
+class:center,middle,inverse
+
+##More complex examples time!
+
 ???
 А теперь более сложные примеры
 
 ---
 class:middle
 
+###Ngrams
+####- mapping
+####- put
+####- get
+####- result
+
+######http://sense.qbox.io/gist/6f5519cc3db0772ab347bb85d969db14d85858f2
+
+---
+####- mapping
+```
+PUT /test_index
+{
+   "settings": {
+      "number_of_shards": 1,
+      "analysis": {
+         "tokenizer": {
+            "ngram_tokenizer": { "type": "nGram", "min_gram": 4, "max_gram": 4 }
+         },
+         "analyzer": {
+            "ngram_tokenizer_analyzer": {
+              "type": "custom", "tokenizer": "ngram_tokenizer"
+            }
+         }
+      }
+   },
+   "mappings": {
+      "doc": {
+         "properties": {
+            "text_field": {
+              "type": "string",
+              "term_vector": "yes",
+              "analyzer": "ngram_tokenizer_analyzer"
+            }
+         }
+      }
+   }
+}```
+
+---
+class:middle
+
+####- put
+```
+PUT /test_index/doc/1
+{
+    "text_field": "Hello, World!"
+}
+```
+
+####- get
+```
+GET /test_index/doc/1/_termvector?fields=text_field
+```
+
+---
+class:middle
+
+####- result
+```
+{
+   "_index": "test_index", "_type": "doc", "_id": "1", "_version": 1,
+   "found": true,
+   "term_vectors": {
+      "text_field": {
+         "field_statistics": {
+          "sum_doc_freq": 10,
+          "doc_count": 1,
+          "sum_ttf": 10
+         },
+         "terms": {
+            " Wor": { "term_freq": 1 },
+            ", Wo": { "term_freq": 1 },
+            "Hell": { "term_freq": 1 },
+            "Worl": { "term_freq": 1 },
+            "ello": { "term_freq": 1 },
+            "llo,": { "term_freq": 1 },
+            "lo, ": { "term_freq": 1 },
+            "o, W": { "term_freq": 1 },
+            "orld": { "term_freq": 1 },
+            "rld!": { "term_freq": 1 }
+         }
+      }
+   }
+}
+```
+
+---
+class:middle
+
+###Index-Time Search-as-You-Type
+####- mapping
+####- analyze
+####- update mapping
+####- bulk create
+####- search
+####- result
+
+######http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/130_Partial_Matching/35_Search_as_you_type.json
+
+---
+class:middle
+
+####- mapping
+```
+PUT /my_index
+{
+    "settings": {
+        "number_of_shards": 1,
+        "analysis": {
+            "filter": {
+                "autocomplete_filter": {
+                    "type":     "edge_ngram",
+                    "min_gram": 1,
+                    "max_gram": 20
+                }
+            },
+            "analyzer": {
+                "autocomplete": {
+                    "type":      "custom",
+                    "tokenizer": "standard",
+                    "filter": [
+                        "lowercase",
+                        "autocomplete_filter"
+                    ]
+                }
+            }
+        }
+    }
+}
+```
+
+---
+class:middle
+
+####- analyze
+```
+GET /my_index/_analyze?analyzer=autocomplete
+quick brown
+```
+
+####- update mapping
+```
+PUT /my_index/_mapping/my_type
+{
+    "my_type": {
+        "properties": {
+            "name": {
+                "type":     "string",
+                "analyzer": "autocomplete"
+            }
+        }
+    }
+}
+```
+
+####- bulk create
+```
+POST /my_index/my_type/_bulk
+{ "index": { "_id": 1            }}
+{ "name": "Brown foxes"    }
+{ "index": { "_id": 2            }}
+{ "name": "Yellow furballs" }
+```
+
+---
+class:middle
+
+####- search
+```
+GET /my_index/my_type/_search
+{
+    "query": {
+        "match": {
+            "name": "brown fo"
+        }
+    }
+}
+```
+
+####- result
+```
+{
+
+  "hits": [
+     {
+        "_id": "1", "_score": 1.5753809, "_source": { "name": "Brown foxes" }
+     },
+     {
+        "_id": "2", "_score": 0.012520773, "_source": { "name": "Yellow furballs" }
+     }
+  ]
+}
+```
+
+---
+class:middle
+
 ### Ngrams for Compound Words
+####- mapping
+####- analyze
+####- bulk create
+####- search
+####- result
+
+######http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/130_Partial_Matching/40_Compound_words.json
+
+---
+class:middle
+
+####- mapping
 ```
 PUT /my_index
 {
@@ -777,8 +974,32 @@ PUT /my_index
 
 ---
 class:middle
-### Search example for ngram
 
+####- analyze
+```
+GET /my_index/_analyze?analyzer=trigrams
+Weißkopfseeadler
+```
+
+####- bulk create
+```
+POST /my_index/my_type/_bulk
+{ "index": { "_id": 1 }}
+{ "text": "Aussprachewörterbuch" }
+{ "index": { "_id": 2 }}
+{ "text": "Militärgeschichte" }
+{ "index": { "_id": 3 }}
+{ "text": "Weißkopfseeadler" }
+{ "index": { "_id": 4 }}
+{ "text": "Weltgesundheitsorganisation" }
+{ "index": { "_id": 5 }}
+{ "text": "Rindfleischetikettierungsüberwachungsaufgabenübertragungsgesetz" }
+```
+
+---
+class:middle
+
+####- search
 ```
 GET /my_index/my_type/_search
 {
@@ -790,64 +1011,196 @@ GET /my_index/my_type/_search
 }
 ```
 
-???
-Ngram для сложных слов
-
-Живой пример:
-http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/130_Partial_Matching/40_Compound_words.json
+####- result
+```
+{
+  "hits": [
+     {
+        "_id": "3",
+        "_score": 3.3191128,
+        "_source": {
+           "text": "Weißkopfseeadler"
+        }
+     }
+  ]
+}
+```
 
 ---
 class:middle
 
-### Real search with filter and query
+###Dynamic mapping + analyze any string field
 ```
-GET http://localhost:9200/products/_search
+PUT /my_index
 {
-  "query": {
-    "filtered": {
-      "query": {
-        "match_all": {}
-      },
-      "filter": {
-        "and": [
-          {
-            "ids": {
-              "values": [
-                "543858c488de100000b0e9c2",
-                "543858c488de100000b0e9c4",
-                "543858c688de100000b0ea98",
-                "543858c788de100000b0ea9e",
-                "543858c788de100000b0eac2",
-                "543858c788de100000b0ead8",
-                "543858c888de100000b0eb1e",
-                "543858c988de100000b0eb29",
-                "547c0e0a50ae9a1e073e5464"
-              ]
+    "mappings": {
+        "my_type": {
+            "dynamic":      "strict",
+            "properties": {
+                "title":  { "type": "string"},
+                "stash":  {
+                    "type":     "object",
+                    "dynamic":  true
+                }
             }
-          }
-        ]
-      }
+        }
     }
-  }
 }
 ```
 
+```
+PUT /my_index/my_type/1
+{
+    "title":   "This doc adds a new field",
+    "stash": { "new_field": "Success!" }
+}
+```
+
+```
+PUT /my_index/my_type/1
+{
+    "title":     "This throws a StrictDynamicMappingException",
+    "new_field": "Fail!"
+}
+```
+
+######http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/070_Index_Mgmt/40_Custom_dynamic_mapping.json
+
 ???
-Вот еще из простеньких запросов
+В идеале необходимо разнести языковые строки по разным индексам
+(или хотябы по типам, потому что навернуть что-то еще поверх динамических маппингов будет сложно)
 
-1) матчить можно как строку так и объект или его часть
+---
+class:middle
 
-2) можно комбинировать фильтры (в данном случае энд просто для того чтобы показать что это возможно)
+###Suggests
+####- mapping
+####- put
+####- suggest
+####- result
 
-3) порядок действий - ВАЖЕН
+######http://blog.qbox.io/quick-and-dirty-autocomplete-with-elasticsearch-completion-suggest
 
-4) можно менять порядок сортировки не только по возрастанию и убыванию.
+---
+class:middle
+
+####- mapping
+```
+curl -XPUT "http://localhost:9200/test_index/" -d'
+{
+   "mappings": {
+      "product": {
+         "properties": {
+            "description": {
+               "type": "string"
+            },
+            "tags": {
+               "type": "string"
+            },
+            "title": {
+               "type": "string"
+            },
+            "tag_suggest": {
+               "type": "completion",
+               "index_analyzer": "simple",
+               "search_analyzer": "simple",
+               "payloads": false
+            }
+         }
+      }
+   }
+}'
+```
+
+---
+class:middle
+
+####- put
+```
+curl -XPUT "http://localhost:9200/test_index/product/1" -d'
+{
+   "title": "Product1",
+   "description": "Product1 Description",
+   "tags": [ "blog", "magazine", "responsive", "two columns", "wordpress" ],
+   "tag_suggest": {
+      "input": [ "blog", "magazine", "responsive", "two columns", "wordpress" ]
+   }
+}'
+```
+```
+curl -XPUT "http://localhost:9200/test_index/product/2" -d'
+{
+   "title": "Product2",
+   "description": "Product2 Description",
+   "tags": [ "blog", "paypal", "responsive", "skrill", "wordland" ],
+   "tag_suggest": {
+      "input": [ "blog", "paypal", "responsive", "skrill", "wordland" ]
+   }
+}'
+```
+
+---
+class:middle
+
+####- suggest
+```
+curl -XPOST "http://localhost:9200/test_index/_suggest" -d'
+{
+    "product_suggest":{
+        "text":"word",
+        "completion": {
+            "field" : "tag_suggest"
+        }
+    }
+}'
+```
+
+####- result
+```
+{
+   "_shards": {
+      "total": 1,
+      "successful": 1,
+      "failed": 0
+   },
+   "product_suggest": [
+      {
+         "text": "word", "offset": 0, "length": 4,
+         "options": [
+            { "text": "wordland", "score": 1 },
+            { "text": "wordpress", "score": 1 }
+         ]
+      }
+   ]
+}
+```
+
+---
+class:middle, inverse
+
+##We didn't talk about:
+####- Multi Search API
+####- Aggregations
+####- Facets
+####- Count API
+####- More Like This API
+####- Filter API
+####- Bulk API
+####- Indices APIs
+####- Queries and Filters
+####Mapping/Analysis/Modules and so on..
+
+???
+1) К примеру можно делать запросы напрямую к эластиксерчу из фронтенда за счет аякс запроса
+
+2) матчить можно как строку так и объект или его часть
+
+3) можно комбинировать фильтры, но есть нюансы их использования
+
+4) порядок действий - ВАЖЕН
+
+5) можно менять порядок сортировки не только по возрастанию и убыванию.
 есть способ указать в query какие документы выводить первыми и логику указывать самому (best_fields, most_fields, cross_fields, phrase, phrase_prefix)
-
-5) агрегирование
-
-6) suggests (к примеру можно делать запросы напрямую к эластиксерчу из фронтенда за счет аякс запроса)
-
 
 ---
 template: inverse
