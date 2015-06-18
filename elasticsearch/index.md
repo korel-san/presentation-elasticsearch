@@ -554,7 +554,7 @@ curl -XGET http://localhost:9200/products/_search -d'{
 curl -XGET http://localhost:9200/products/_search -d'{
   "query": {
     "query_string": {
-       "query": "Dubai AND 195?"
+       "query": "Dubai AND 30?"
     }
   }
 }'
@@ -579,7 +579,7 @@ curl -XGET http://localhost:9200/products/_search -d'{
 ```
 curl -XGET http://localhost:9200/products/_search -d'{
   "query": {
-    "text": {
+    "match": {
       "descriptions.en.metaDescription": {
         "query": "Platinum",
         "type": "phrase_prefix"
@@ -594,16 +594,19 @@ class:middle
 
 ### Full-Text Query plus Filter on a Field
 ```
-curl -XGET http://localhost:9200/products/_search -d'{
-   "query": {
-       "query_string": {
-           "query": {query string}
-       },
-       "term": {
-           {field}: {value}
-       }
-   }
-}'
+GET /products/_search
+{
+  "query": {
+    "filtered": {
+      "query": {
+        "match": { "descriptions.en.metaDescription": "Platinum" }
+      },
+      "filter": {
+        "fquery": { "query": { "match": { "type": "credit-card" } } }
+      }
+    }
+  }
+}
 ```
 
 ### Analyze word
@@ -620,26 +623,25 @@ class:middle
 
 ### Filter on two fields
 ```
-curl -XGET http://localhost:9200/products/_search -d'{
-   "query": {
-       "filtered": {
-           "query": { "match_all": {} },
-           "filter": {
-               "and": [{
-                   "ids": { "values": ["1","2","3","4","5","6","7","8","9"] }
-               }, {
-                   "range" : {
-                       "b" : {
-                           "from" : 4,
-                           "to" : "8"
-                       }
-                   },
-               }, { "term": { "a": "john" } }]
-           }
-       }
-   }
-}'
+GET /products/_search
+{
+ "query": {
+   "filtered": {
+      "query": { "match_all": {} },
+      "filter": {
+        "and": [
+          { "ids": { "values": ["1","2","3","4","5","6"] } },
+          { "range" : { "b" : { "from" : 4, "to" : "8" } } },
+          { "term": { "type": "credit-card" } }
+        ]
+      }
+    }
+  }
+}
 ```
+
+???
+Здесь уже показывать не буду, тут в принципе и так понятно
 
 ---
 class: middle
@@ -723,6 +725,11 @@ curl -XGET http://localhost:9200/products/_search -d'{
 }'
 ```
 
+???
+К сожалению достойного примера уне нашлось, чтобы показать фильтрацию по геопозици в действии
+
+В любом случае оно будет искать точку в радиусе 20 км от указанной
+
 ---
 class:center,middle,inverse
 
@@ -741,6 +748,16 @@ class:middle
 ####- result
 
 ######http://sense.qbox.io/gist/6f5519cc3db0772ab347bb85d969db14d85858f2
+
+???
+Это своего рода анализаторы текста. Т/е/ к примеру у вас есть текст (или даже объект состоящий из свойств в которых находится текст)
+
+И вам необходимо найти все документы, в каком-то списке свойств которых есть искомый текст (который может быть началом слова,
+серединой, окончанием, или даже промежуточным значением: "lo wo")
+
+чем это удобно? любая часть текста может быть найдена (конечно же в зависимости от того как вы настроите анализатор)
+
+Эластик ищет только СОВПАДАЮЩИЙ текст. Он не сможет вывести вам ответ, в случае если вы опечатались.
 
 ---
 ####- mapping
@@ -833,6 +850,12 @@ class:middle
 ####- result
 
 ######http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/130_Partial_Matching/35_Search_as_you_type.json
+
+???
+Более продвинутая версия ngrama
+Хороша тем, что может выводить результаты, даже если вы еще не допечатали текст до конца
+Например в гугле вам выпадает список возможных фраз когда вы набираете текст в поисковой строке
+Ограничение на длину поиска задается в settings
 
 ---
 class:middle
@@ -940,6 +963,9 @@ class:middle
 ####- result
 
 ######http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/130_Partial_Matching/40_Compound_words.json
+
+???
+Еще более крутая навороченная штука: ngram для длинных сложных слов, как например в немецком языке
 
 ---
 class:middle
@@ -1067,6 +1093,9 @@ PUT /my_index/my_type/1
 ######http://localhost:9200/_plugin/marvel/sense/index.html?load_from=http://www.elastic.co/guide/en/elasticsearch/guide/current/snippets/070_Index_Mgmt/40_Custom_dynamic_mapping.json
 
 ???
+Динамический маппинг необходим лишь для подстройки маппинга, в случае когда сам эластик не знает что делать с новым полем,
+которое было добавлено в документ (для некоторых полей динамический маппинг, который по умолчанию включен, можно отключить)
+
 В идеале необходимо разнести языковые строки по разным индексам
 (или хотябы по типам, потому что навернуть что-то еще поверх динамических маппингов будет сложно)
 
@@ -1080,6 +1109,11 @@ class:middle
 ####- result
 
 ######http://blog.qbox.io/quick-and-dirty-autocomplete-with-elasticsearch-completion-suggest
+
+???
+Саджесты - очень клевая штука тогда, когда вам необходимо искать текст с опечатками и перепутанными буквами
+
+Эластик проанализирует все поля которые вы ему укажете, и затем предложит документы в порядке их схожести с текстом
 
 ---
 class:middle
@@ -1201,6 +1235,8 @@ class:middle, inverse
 
 5) можно менять порядок сортировки не только по возрастанию и убыванию.
 есть способ указать в query какие документы выводить первыми и логику указывать самому (best_fields, most_fields, cross_fields, phrase, phrase_prefix)
+
+6) разного вида группировки
 
 ---
 template: inverse
